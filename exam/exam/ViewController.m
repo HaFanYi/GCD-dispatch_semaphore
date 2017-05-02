@@ -17,7 +17,23 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
-    [self request];
+    //    [self request];
+    //按照顺序
+    NSBlockOperation *operation_1 = [NSBlockOperation blockOperationWithBlock:^{
+        [self request1];
+    }];
+    NSBlockOperation *operation_2 = [NSBlockOperation blockOperationWithBlock:^{
+        [self request2];
+    }];
+    NSBlockOperation *operation_3 = [NSBlockOperation blockOperationWithBlock:^{
+        [self request3];
+    }];
+    //设置依赖
+    [operation_2 addDependency:operation_1];
+    [operation_3 addDependency:operation_1];
+    //创建队列并添加任务
+    NSOperationQueue *queue = [[NSOperationQueue alloc]init];
+    [queue addOperations:@[operation_3,operation_2,operation_1] waitUntilFinished:YES];
 }
 
 
@@ -33,9 +49,9 @@
     dispatch_group_async(group, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
         [self request3];
     }) ;
-   dispatch_group_notify(group, dispatch_get_main_queue(), ^{
-       NSLog(@"刷新界面");
-   });
+    dispatch_group_notify(group, dispatch_get_main_queue(), ^{
+        NSLog(@"刷新界面");
+    });
 }
 
 //真正的网络请求
@@ -48,14 +64,15 @@
     [manager GET:url parameters:nil progress:^(NSProgress * _Nonnull uploadProgress) {
         
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-       //计数加1
-        dispatch_semaphore_signal(semaphore);
         NSArray *data = responseObject[@"data"];
         for (NSDictionary *dic in data) {
             NSLog(@"请求1---%@",dic[@"id"]);
         }
-         //11380-- data.lastObject[@"id"];
+        //计数加1
+        dispatch_semaphore_signal(semaphore);
+        //11380-- data.lastObject[@"id"];
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
+        NSLog(@"shibai...");
         //计数加1
         dispatch_semaphore_signal(semaphore);
     }];
@@ -71,12 +88,12 @@
     [manager GET:url1 parameters:nil progress:^(NSProgress * _Nonnull uploadProgress) {
         
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        //计数加1
-        dispatch_semaphore_signal(semaphore);
         NSArray *data = responseObject[@"data"];
         for (NSDictionary *dic in data) {
             NSLog(@"请求2---%@",dic[@"id"]);
         }
+        //计数加1
+        dispatch_semaphore_signal(semaphore);
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         //计数加1
         dispatch_semaphore_signal(semaphore);
@@ -93,12 +110,12 @@
     [manager GET:url2 parameters:nil progress:^(NSProgress * _Nonnull uploadProgress) {
         
     } success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
-        //计数加1
-        dispatch_semaphore_signal(semaphore);
         NSArray *data = responseObject[@"data"];
         for (NSDictionary *dic in data) {
             NSLog(@"请求3---%@",dic[@"id"]);
         }
+        //计数加1
+        dispatch_semaphore_signal(semaphore);
     } failure:^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
         //计数加1
         dispatch_semaphore_signal(semaphore);
